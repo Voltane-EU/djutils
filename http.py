@@ -33,7 +33,7 @@ def exceptions_to_http(*exceptions):
         def wrapper(*args, **kwargs):
             try:
                 return f(*args, **kwargs)
-            except (*exceptions) as error:
+            except exceptions as error:
                 return JsonResponse({"message": _(error.message), "code": error.code}, status=error.status_code or 403)
             except AssertionError as error:
                 return JsonResponse({"message": _(error.args[0]), "code": error.args[1] if len(error.args) > 1 else None}, status=400)
