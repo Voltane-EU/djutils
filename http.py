@@ -24,7 +24,7 @@ def get_ip_address(request):
     """
     return request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
 
-def exceptions_to_http(*exceptions):
+def exceptions_to_http(*exceptions, status_code=403):
     """
     Returns occurring exceptions of the defined type(s) as `JsonResponse`.
     A `AssertionError` will resolve with HTTP Status code 400
@@ -34,7 +34,7 @@ def exceptions_to_http(*exceptions):
             try:
                 return f(*args, **kwargs)
             except exceptions as error:
-                return JsonResponse({"message": _(error.message), "code": error.code}, status=error.status_code or 403)
+                return JsonResponse({"message": _(error.message), "code": error.code}, status=error.status_code or status_code)
             except AssertionError as error:
                 return JsonResponse({"message": _(error.args[0]), "code": error.args[1] if len(error.args) > 1 else None}, status=400)
         return wrapper
