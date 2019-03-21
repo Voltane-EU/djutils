@@ -11,8 +11,16 @@ def random_string_generator(size=16, chars=string.ascii_lowercase + string.ascii
 
 def sha512_hash(key, msg):
     """ SHA512 hexdigest of `msg` salted with `key`. UTF-8 Encoded. """
-    return hmac.new(key=key.encode('utf-8'), msg=msg.encode('utf-8'), digestmod=hashlib.sha512).hexdigest()
+    return hmac.new(
+        key=key.encode('utf-8') if isinstance(key, str) else key,
+        msg=msg.encode('utf-8') if isinstance(msg, str) else msg,
+        digestmod=hashlib.sha512
+    ).hexdigest()
 
 def sha256_hash(key, msg):
     """ SHA256 hexdigest of `msg` salted with `key`. UTF-8 Encoded. """
-    return hmac.new(key=key.encode('utf-8'), msg=msg.encode('utf-8'), digestmod=hashlib.sha256).hexdigest()
+    return hmac.new(
+        key=key.encode('utf-8') if isinstance(key, str) else key,
+        msg=msg.encode('utf-8') if isinstance(msg, str) else msg,
+        digestmod=hashlib.sha256
+    ).hexdigest()
