@@ -1,4 +1,4 @@
-from random import choice
+import secrets
 import string
 import hmac
 import hashlib
@@ -6,7 +6,8 @@ import hashlib
 ASCII_NOT_CONFUSABLE = "ABCEFGHJKLMNPQRSTUWXYZ123456789"
 
 def random_string_generator(size=16, chars=string.ascii_lowercase + string.ascii_uppercase + string.digits):
-    """ Generate a string with length `size` out of the defined charset `chars` """
+    """ Generate a secure random string with length `size` out of the defined charset `chars`. """
+    choice = secrets.SystemRandom().choice
     return ''.join(choice(chars) for _ in range(size))
 
 def sha512_hash(key, msg):
