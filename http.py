@@ -43,5 +43,8 @@ def exceptions_to_http(*exceptions, status_code=403):
 def respond_json(f):
     """ Converts the returned data into a `JsonResponse` """
     def wrapper(*args, **kwargs):
-        return JsonResponse(f(*args, **kwargs))
+        ret = f(*args, **kwargs)
+        if not isinstance(ret, JsonResponse):
+            ret = JsonResponse(ret)
+        return ret
     return wrapper
