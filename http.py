@@ -1,5 +1,5 @@
 from django.utils.translation import gettext_lazy as _
-from django.http import HttpResponseRedirect, Http404, JsonResponse
+from django.http import HttpResponse, HttpResponseRedirect, Http404, JsonResponse
 from django.contrib.staticfiles.views import serve
 
 def redirect(to):
@@ -44,7 +44,7 @@ def respond_json(f):
     """ Converts the returned data into a `JsonResponse` """
     def wrapper(*args, **kwargs):
         ret = f(*args, **kwargs)
-        if not isinstance(ret, JsonResponse):
-            ret = JsonResponse(ret)
+        if not isinstance(ret, HttpResponse):
+            ret = JsonResponse(ret, safe=False)
         return ret
     return wrapper
