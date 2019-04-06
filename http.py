@@ -36,7 +36,7 @@ def exceptions_to_http(*exceptions, status_code=403):
             except exceptions as error:
                 return JsonResponse({"message": _(error.message), "code": error.code}, status=error.status_code or status_code)
             except AssertionError as error:
-                return JsonResponse({"message": _(error.args[0]), "code": error.args[1] if len(error.args) > 1 else None}, status=400)
+                return JsonResponse({"message": _(error.args[0]) if len(error.args) > 0 else None, "code": error.args[1] if len(error.args) > 1 else None}, status=400)
         return wrapper
     return wrap_function
 
