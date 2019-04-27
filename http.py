@@ -2,6 +2,8 @@ from django.utils.translation import gettext_lazy as _
 from django.http import HttpResponse, HttpResponseRedirect, Http404, JsonResponse
 from django.contrib.staticfiles.views import serve
 
+from .exceptions import Error
+
 def redirect(to):
     """ A simple static redirect for use in the urlpatterns preserving GET parameters """
     def redir(request):
@@ -34,9 +36,22 @@ def exceptions_to_http(*exceptions, status_code=403):
             try:
                 return f(*args, **kwargs)
             except exceptions as error:
-                return JsonResponse({"message": _(error.message), "code": error.code}, status=error.status_code or status_code)
-            except AssertionError as error:
-                return JsonResponse({"message": _(error.args[0]) if len(error.args) > 0 else None, "code": error.args[1] if len(error.args) > 1 else None}, status=400)
+                if isinstance(error, Error):
+                    return JsonResponse(
+                        {
+                            "message": _(error.message),
+                            "code": error.code
+                        },
+                        status=error.status_code or status_code
+                    )
+                else:
+                    return JsonResponse(
+                        {
+                            "message": _(error.args[0]) if error.args else None,
+                            "code": error.args[1] if len(error.args) > 1 else None
+                        },
+                        status=400 if isinstance(error, AssertionError) else status_code
+                    )
         return wrapper
     return wrap_function
 
