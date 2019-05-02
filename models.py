@@ -24,6 +24,11 @@ def model_to_dict(instance, fields: list = [], exclude: list = []):
             value = [model_to_dict(related) for related in value.all()]
         elif isinstance(value, FieldFile):
             value = value.url
+        elif isinstance(value, models.Model):
+            try:
+                value = getattr(value, "values")()
+            except AttributeError:
+                pass
 
         data[field] = value
 
