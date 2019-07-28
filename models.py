@@ -1,3 +1,4 @@
+import os.path
 import uuid
 import hashlib
 from datetime import datetime
@@ -35,22 +36,25 @@ def model_to_dict(instance, fields: list = [], exclude: list = []):
     return data
 
 class CroppedImageStorage(FileSystemStorage):
-    def __init__(self, *args, resize_to=(256, 256), resample=Image.BICUBIC, **kwargs):
+    def __init__(self, *args, resize_to=(256, 256), resample=Image.BICUBIC, just_hash=False, **kwargs):
         super().__init__(*args, **kwargs)
         self.resize_to = resize_to
         self.resample = resample
+        self.just_hash = just_hash
 
     def _save(self, name, content):
         file = BytesIO()
         content.image = self.process_picture(content.file)
         content.image.save(file, format='png')
-        name = hashlib.sha256(file.read()).hexdigest()
+        hash_name = hashlib.sha256(file.read()).hexdigest()
         content.file.seek(0)
-
         content.file = file
 
-        ret = super()._save(name+".png", content)
-        return ret[0:-4]
+        name = os.path.join(os.path.dirname(name), hash_name+".png")
+        ret = super()._save(name, content)
+        if self.just_hash:
+            return os.path.basename(ret)[:-4]
+        return ret
 
     def process_picture(self, file):
         """ Process the incomming file, returns Image object """
