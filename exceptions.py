@@ -1,6 +1,10 @@
 from django.forms import ValidationError
 
 class Error(Exception):
+    """
+    A base Error class which can be used along with djutils.http.exceptions_to_http decorator to provide an technical
+    error code which can be passed to the client and an appropriate http status code.
+    """
     def __init__(self, message, code=None, status_code=None, **kw):
         if isinstance(self, ValidationError):
             super().__init__(message=message, code=code, **kw)
