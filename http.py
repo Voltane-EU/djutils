@@ -3,6 +3,8 @@ from django.http import HttpResponse, HttpResponseRedirect, Http404, JsonRespons
 from django.contrib.staticfiles.views import serve
 
 from .exceptions import Error
+from . import app_settings
+
 
 def redirect(to):
     """ A simple static redirect for use in the urlpatterns preserving GET parameters """
@@ -27,21 +29,29 @@ def get_ip_address(request):
     return request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
 
 def error_respond_json(error, status_code):
+    response = {
+        'message': None,
+        'code': None,
+    }
+
+    if app_settings.HTTP_ERROR_INCLUDE_CLASS_NAME:
+        response['type'] = error.__class__.__name__
+
     if isinstance(error, Error):
-        return JsonResponse(
-            {
-                "message": _(error.message),
-                "code": error.code
-            },
-            status=error.status_code or status_code
-        )
+        response['message'] = _(error.message)
+        response['code'] = error.code
+        status_code = error.status_code or status_code
+
+    else:
+        response['message'] = _(error.args[0]) if error.args else None
+        response['code'] = error.args[1] if len(error.args) > 1 else None
+        status_code = 400 if isinstance(error, AssertionError) else status_code
 
     return JsonResponse(
         {
-            "message": _(error.args[0]) if error.args else None,
-            "code": error.args[1] if len(error.args) > 1 else None
-        },
-        status=400 if isinstance(error, AssertionError) else status_code
+            "error": response
+        } if app_settings.HTTP_ERROR_WRAP_IN_ERROR_DICT else response,
+        status=status_code,
     )
 
 def exceptions_to_http(*exceptions, status_code=403):
