@@ -26,6 +26,24 @@ def get_ip_address(request):
     """
     return request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
 
+def error_respond_json(error, status_code):
+    if isinstance(error, Error):
+        return JsonResponse(
+            {
+                "message": _(error.message),
+                "code": error.code
+            },
+            status=error.status_code or status_code
+        )
+
+    return JsonResponse(
+        {
+            "message": _(error.args[0]) if error.args else None,
+            "code": error.args[1] if len(error.args) > 1 else None
+        },
+        status=400 if isinstance(error, AssertionError) else status_code
+    )
+
 def exceptions_to_http(*exceptions, status_code=403):
     """
     Returns occurring exceptions of the defined type(s) as `JsonResponse`.
@@ -36,22 +54,7 @@ def exceptions_to_http(*exceptions, status_code=403):
             try:
                 return f(*args, **kwargs)
             except exceptions as error:
-                if isinstance(error, Error):
-                    return JsonResponse(
-                        {
-                            "message": _(error.message),
-                            "code": error.code
-                        },
-                        status=error.status_code or status_code
-                    )
-                else:
-                    return JsonResponse(
-                        {
-                            "message": _(error.args[0]) if error.args else None,
-                            "code": error.args[1] if len(error.args) > 1 else None
-                        },
-                        status=400 if isinstance(error, AssertionError) else status_code
-                    )
+                return error_respond_json(error, status_code)
         return wrapper
     return wrap_function
 
