@@ -39,16 +39,16 @@ def error_respond_json(error, status_code):
         response['type'] = error.__class__.__name__
 
     if isinstance(error, Error):
-        response['message'] = _(error.message)
+        response['message'] = _(error.message) if error.message else None
         response['code'] = error.code
         status_code = error.status_code or status_code
 
     elif isinstance(error, ValidationError):
-        response['message'] = _(error.message)
+        response['message'] = _(error.message) if error.message else None
         response['code'] = error.code
 
     else:
-        response['message'] = _(error.args[0]) if error.args else None
+        response['message'] = _(str(error.args[0])) if error.args else None
         response['code'] = error.args[1] if len(error.args) > 1 else None
         status_code = 400 if isinstance(error, AssertionError) else status_code
 
