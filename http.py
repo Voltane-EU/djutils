@@ -1,5 +1,6 @@
 from django.utils.translation import gettext_lazy as _
 from django.http import HttpResponse, HttpResponseRedirect, Http404, JsonResponse
+from django.core.exceptions import ValidationError
 from django.contrib.staticfiles.views import serve
 
 from .exceptions import Error
@@ -41,6 +42,10 @@ def error_respond_json(error, status_code):
         response['message'] = _(error.message)
         response['code'] = error.code
         status_code = error.status_code or status_code
+
+    elif isinstance(error, ValidationError):
+        response['message'] = _(error.message)
+        response['code'] = error.code
 
     else:
         response['message'] = _(error.args[0]) if error.args else None
