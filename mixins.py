@@ -24,5 +24,5 @@ class CombineWithSubclassesMixin:
         else:
             new_cls = cls
 
-        ret = super().__new__(new_cls, *args, **kwargs)
+        ret = super().__new__(new_cls)
         return ret
