@@ -10,6 +10,7 @@ It includes tools for:
 - Exceptions
 - HTTP Handling
 - IP-Address handling
+- Mixins for Classes
 
 ## Installation
 Use the python package manager pip to install djutils.
