@@ -1,12 +1,14 @@
 import os.path
 import uuid
 import hashlib
+import subprocess
 from datetime import datetime
 from io import BytesIO
 from PIL import Image
 from django.db import models
 from django.core.files.storage import FileSystemStorage
 from django.db.models.fields.files import FieldFile
+from django.utils.deconstruct import deconstructible
 
 def model_to_dict(instance, fields: list = [], exclude: list = []):
     if not fields:
@@ -35,26 +37,80 @@ def model_to_dict(instance, fields: list = [], exclude: list = []):
 
     return data
 
-class CroppedImageStorage(FileSystemStorage):
-    def __init__(self, *args, resize_to=(256, 256), resample=Image.BICUBIC, just_hash=False, **kwargs):
+
+@deconstructible
+class MozJPEGPostprocessor:
+    def __init__(self, *args, **kwargs):
+        self.args = args
+        self.kwargs = kwargs
+
+    def __call__(self, file):
+        return self.process(file, *self.args, **self.kwargs)
+
+    @classmethod
+    def process(cls, file: BytesIO, *args, timeout=10):
+        mozjpeg = subprocess.Popen(['mozjpeg', *args], stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+        try:
+            stdout, stderr = mozjpeg.communicate(file.getvalue(), timeout=timeout)
+
+        except subprocess.TimeoutExpired:
+            mozjpeg.kill()
+            raise TimeoutError
+
+        if stderr:
+            raise IOError(stderr)
+
+        return BytesIO(stdout)
+
+
+class AbstractImageStorage(FileSystemStorage):
+    def __init__(self, *args, resize_to: tuple = None, resample=Image.BICUBIC, output_format='png', just_hash=False, hash_algo=hashlib.sha256, post_process=None, **kwargs):
+        """
+        Image Storage.
+        Resamples an Image before storing as File.
+
+        Params:
+        resize_to: tuple, (width, height)
+        resample: PIL.Image resampling metho
+        output_format: Image Format (png, jpg, gif, etc.)
+        just_hash: Return only the file hash (file basename without extension) instead of the full storage location path
+        post_process: callable for additional processing after self.process_picture(); intended to be used for compression, passes the file (BytesIO) as argument
+        """
         super().__init__(*args, **kwargs)
         self.resize_to = resize_to
         self.resample = resample
+        self.format = output_format
         self.just_hash = just_hash
+        self.hash_algo = hash_algo
+        self.post_process = post_process
+
+    def process_picture(self, file):
+        raise NotImplementedError
 
     def _save(self, name, content):
         file = BytesIO()
         content.image = self.process_picture(content.file)
-        content.image.save(file, format='png')
-        hash_name = hashlib.sha256(file.read()).hexdigest()
+        content.image.save(file, format=self.format)
+
+        if self.post_process:
+            file = self.post_process(file)
+
+        hash_name = self.hash_algo(file.read()).hexdigest()
         content.file.seek(0)
         content.file = file
 
-        name = os.path.join(os.path.dirname(name), hash_name+".png")
+        name = os.path.join(os.path.dirname(name), "%s.%s" % (hash_name, self.format))
         ret = super()._save(name, content)
         if self.just_hash:
-            return os.path.basename(ret)[:-4]
+            return os.path.basename(ret)[:-(len(self.format) + 1)]
+
         return ret
+
+
+class CroppedImageStorage(AbstractImageStorage):
+    """
+    Image, resized and cropped to a square
+    """
 
     def process_picture(self, file):
         """ Process the incomming file, returns Image object """
@@ -74,4 +130,17 @@ class CroppedImageStorage(FileSystemStorage):
                 image.size[1] - (image.size[1] - image.size[0]) / 2,
             )
         image = image.resize(self.resize_to, resample=self.resample, box=box)
+        return image
+
+
+class ThumbnailImageStorage(AbstractImageStorage):
+    """
+    Image, resized if larger than given resize_to, aspect ratio is being kept (uses PIL.Image.thumbnail())
+    """
+
+    def process_picture(self, file):
+        """ Process the incomming file, returns Image object """
+        image = Image.open(file)
+        image.thumbnail(self.resize_to, resample=self.resample)
+
         return image
