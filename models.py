@@ -131,7 +131,10 @@ class AbstractImageStorage(FileSystemStorage):
         if self.post_process:
             file = self.post_process(file)
 
+        file.seek(0)
         hash_name = self.hash_algo(file.read()).hexdigest()
+        file.seek(0)
+
         content.file.seek(0)
         content.file = file
 
