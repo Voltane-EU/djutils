@@ -132,13 +132,15 @@ class AbstractImageStorage(FileSystemStorage):
             file = self.post_process(file)
 
         file.seek(0)
-        hash_name = self.hash_algo(file.read()).hexdigest()
-        file.seek(0)
+
+        if self.hash_algo:
+            hash_name = self.hash_algo(file.read()).hexdigest()
+            file.seek(0)
+            name = os.path.join(os.path.dirname(name), "%s.%s" % (hash_name, self.format))
 
         content.file.seek(0)
         content.file = file
 
-        name = os.path.join(os.path.dirname(name), "%s.%s" % (hash_name, self.format))
         ret = super()._save(name, content)
         if self.just_hash:
             return os.path.basename(ret)[:-(len(self.format) + 1)]
