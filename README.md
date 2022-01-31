@@ -34,8 +34,7 @@ def my_route(request):
 ```
 
 ## License
-GNU GPLv3, see LICENSE
+GNU LGPLv2.1, see LICENSE
 
 ## Maintainer
 This package is maintained by Manuel Stingl.
-For more information see https://opensource.voltane.eu
