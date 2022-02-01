@@ -1,7 +1,8 @@
 from django.urls import reverse
-from django.utils.html import format_html
-from django.utils.encoding import force_text
 from django.utils import timezone
+from django.utils.html import format_html
+from django.utils.encoding import force_str as force_text
+
 
 def time_format(field, date_format=None, description=None):
     """
