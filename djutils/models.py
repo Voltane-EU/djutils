@@ -6,9 +6,12 @@ from datetime import datetime
 from io import BytesIO
 from PIL import Image
 from django.db import models
-from django.core.files.storage import FileSystemStorage
+from django.db.models import Func, Value, CharField, JSONField
+from django.db.transaction import atomic
 from django.db.models.fields.files import FieldFile
+from django.core.files.storage import FileSystemStorage
 from django.utils.deconstruct import deconstructible
+
 
 def model_to_dict(instance, fields: list = [], exclude: list = []):
     if not fields:
@@ -185,3 +188,37 @@ class ThumbnailImageStorage(AbstractImageStorage):
         image.thumbnail(self.resize_to, resample=self.resample)
 
         return image
+
+
+# Original code from "olympus", Copyright (C) 2021  LaVita GmbH / Digital Solutions, LGPLv2.1
+# https://github.com/LaVita-GmbH/olympus
+
+
+class ModelAtomicSave(models.Model):
+    @atomic
+    def save(self, *args, **kwargs):
+        return super().save(*args, **kwargs)
+
+    class Meta:
+        abstract = True
+
+
+class JSONArrayElements(Func):
+    function = 'jsonb_array_elements'
+    arity = 1
+
+
+class JSONExtractPath(Func):
+    function = 'jsonb_extract_path'
+    arity = 2
+
+    def __init__(self, jsonb, path):
+        super().__init__(jsonb, Value(path, output_field=CharField()), output_field=JSONField())
+
+
+class JSONExtractPathText(Func):
+    function = 'jsonb_extract_path_text'
+    arity = 2
+
+    def __init__(self, jsonb, path):
+        super().__init__(jsonb, Value(path, output_field=CharField()), output_field=CharField())
