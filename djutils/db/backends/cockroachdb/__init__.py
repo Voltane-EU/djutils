@@ -1,0 +1,1 @@
+from django_cockroachdb import __version__

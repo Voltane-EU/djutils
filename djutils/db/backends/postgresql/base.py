@@ -22,6 +22,7 @@ class CursorDebugWrapper(ReconnectingCursorMixin, BaseCursorDebugWrapper):
 class DatabaseWrapper(PGSQLDatabaseWrapper):
     @async_unsafe
     def _reconnect(self):
+        logging.info("Reconnecting to DB")
         try:
             self.connection.close()
 
