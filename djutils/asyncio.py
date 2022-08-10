@@ -5,20 +5,7 @@ https://github.com/LaVita-GmbH/olympus
 
 import os
 from asyncio import get_event_loop
-
-
-def is_async():
-    try:
-        event_loop = get_event_loop()
-
-    except RuntimeError:
-        pass
-
-    else:
-        if event_loop.is_running():
-            return True
-
-    return False
+from async_tools import is_async  # noqa
 
 
 class AllowAsyncUnsafe:

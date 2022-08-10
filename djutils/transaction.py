@@ -10,7 +10,7 @@ from inspect import CO_COROUTINE
 from functools import wraps
 from typing import Callable, Optional
 from django.db import transaction
-from .asyncio import is_async
+from async_tools import is_async
 
 
 _logger = logging.getLogger(__name__)
