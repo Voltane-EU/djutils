@@ -1,4 +1,5 @@
 import os.path
+from typing import Any
 import uuid
 import hashlib
 import subprocess
@@ -10,6 +11,7 @@ from django.db.models import Func, Value, CharField, JSONField
 from django.db.transaction import atomic
 from django.db.models.fields.files import FieldFile
 from django.core.files.storage import FileSystemStorage
+from django.utils.crypto import get_random_string
 from django.utils.deconstruct import deconstructible
 
 
@@ -222,3 +224,32 @@ class JSONExtractPathText(Func):
 
     def __init__(self, jsonb, path):
         super().__init__(jsonb, Value(path, output_field=CharField()), output_field=CharField())
+
+
+class RandomIDField(models.CharField):
+    description = "A primary key field based on random characters with a given length"
+
+    def __init__(self, length: int, *args, **kwargs):
+        self.length = length
+        kwargs.setdefault('editable', False)
+        kwargs.setdefault('primary_key', True)
+        kwargs['max_length'] = self.length
+
+        super().__init__(*args, **kwargs)
+
+    def has_default(self):
+        return True
+
+    def get_default(self):
+        return get_random_string(self.length)
+
+    def deconstruct(self):
+        name, path, args, keywords = super().deconstruct()
+
+        keywords.update({
+            'length': self.length,
+            'primary_key': self.primary_key,
+            'editable': self.editable,
+        })
+
+        return name, path, args, keywords
