@@ -3,6 +3,7 @@ Original code from "olympus", Copyright (C) 2021  LaVita GmbH / Digital Solution
 https://github.com/LaVita-GmbH/olympus
 """
 
+from typing import Optional
 import hmac
 from psycopg2.extensions import quote_ident
 from psycopg2.errorcodes import UNDEFINED_TABLE
@@ -15,10 +16,10 @@ def number_generator(
     tenant_id: str,
     sequence_name: str,
     number_format: str,
-    checksum_salt: str,
-    checksum_algorithm: str,
-    checksum_length: int,
-    checksum_format: str,
+    checksum_salt: Optional[str] = None,
+    checksum_algorithm: Optional[str] = None,
+    checksum_length: Optional[int] = None,
+    checksum_format: Optional[str] = None,
 ) -> str:
     if not tenant_id:
         raise ValueError("Tenant-ID not given")
@@ -42,7 +43,9 @@ def number_generator(
             i += 1
             with connection.cursor() as cursor:
                 with atomic():
-                    cursor.execute("CREATE SEQUENCE IF NOT EXISTS %s START 1;" % quote_ident(sequence_name, cursor.cursor))
+                    cursor.execute(
+                        "CREATE SEQUENCE IF NOT EXISTS %s START 1;" % quote_ident(sequence_name, cursor.cursor)
+                    )
 
     if not val:
         raise ValueError('cannot_obtain_next_number')
@@ -55,10 +58,10 @@ def number_generator(
         'number': nextnumber,
     }
 
-    if checksum_length > 0:
+    if checksum_length and checksum_length > 0:
         checksum_value = hmac.new(checksum_salt, bytes(number, 'utf-8'), digestmod=checksum_algorithm)
         checksum_int = int(checksum_value.hexdigest(), 16)
-        checksum_number = checksum_int % 10 ** checksum_length
+        checksum_number = checksum_int % 10**checksum_length
         checksum = '%0*d' % (checksum_length, checksum_number)
         number = checksum_format % {
             'number': number,
