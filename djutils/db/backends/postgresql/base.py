@@ -4,11 +4,19 @@ https://github.com/LaVita-GmbH/olympus
 """
 
 import logging
-from psycopg2 import InterfaceError
 from django.utils.asyncio import async_unsafe
-from django.db.backends.postgresql.base import DatabaseWrapper as PGSQLDatabaseWrapper, CursorDebugWrapper as BaseCursorDebugWrapper
+from django.db.backends.postgresql.base import (
+    DatabaseWrapper as PGSQLDatabaseWrapper,
+    CursorDebugWrapper as BaseCursorDebugWrapper,
+)
 from django.db.backends.utils import CursorWrapper as BaseCursorWrapper
 from ...utils import ReconnectingCursorMixin
+
+try:
+    from psycopg2 import InterfaceError
+
+except ImportError:
+    from psycopg import InterfaceError
 
 
 class CursorWrapper(ReconnectingCursorMixin, BaseCursorWrapper):

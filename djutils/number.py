@@ -1,15 +1,28 @@
-"""
-Original code from "olympus", Copyright (C) 2021  LaVita GmbH / Digital Solutions, LGPLv2.1
+'''
+Original code from 'olympus', Copyright (C) 2021  LaVita GmbH / Digital Solutions, LGPLv2.1
 https://github.com/LaVita-GmbH/olympus
-"""
+'''
 
 from typing import Optional
 import hmac
-from psycopg2.extensions import quote_ident
-from psycopg2.errorcodes import UNDEFINED_TABLE
 from django.db import connection, ProgrammingError, InternalError
 from django.db.transaction import atomic
 from django.utils import timezone
+
+try:
+    from psycopg2.extensions import quote_ident
+    from psycopg2.errorcodes import UNDEFINED_TABLE
+
+    UndefinedTable = None
+
+except ImportError:
+    from psycopg.errors import UndefinedTable
+    from psycopg.pq import Escaping
+
+    UNDEFINED_TABLE = None
+    quote_ident = lambda string, cursor: str(
+        Escaping(cursor._pgconn).escape_identifier(bytes(string, 'utf-8')), 'utf-8'
+    )
 
 
 def number_generator(
@@ -22,7 +35,7 @@ def number_generator(
     checksum_format: Optional[str] = None,
 ) -> str:
     if not tenant_id:
-        raise ValueError("Tenant-ID not given")
+        raise ValueError('Tenant-ID not given')
 
     sequence_name = f'{sequence_name}_{tenant_id}'
     val = None
@@ -32,19 +45,21 @@ def number_generator(
         try:
             with connection.cursor() as cursor:
                 with atomic():
-                    cursor.execute("SELECT nextval(%s);", (quote_ident(sequence_name, cursor.cursor),))
+                    cursor.execute('SELECT nextval(%s);', (quote_ident(sequence_name, cursor.cursor),))
                     val = cursor.fetchone()
                     break
 
         except (ProgrammingError, InternalError) as error:
-            if error.__cause__.pgcode != UNDEFINED_TABLE:
+            if (UNDEFINED_TABLE and error.__cause__.pgcode != UNDEFINED_TABLE) or (
+                UndefinedTable and not isinstance(error.__cause__, UndefinedTable)
+            ):
                 raise
 
             i += 1
             with connection.cursor() as cursor:
                 with atomic():
                     cursor.execute(
-                        "CREATE SEQUENCE IF NOT EXISTS %s START 1;" % quote_ident(sequence_name, cursor.cursor)
+                        'CREATE SEQUENCE IF NOT EXISTS %s START 1;' % quote_ident(sequence_name, cursor.cursor)
                     )
 
     if not val:
